@@ -10,7 +10,21 @@ set(CMAKE_AUTOUIC ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-add_executable(JanusLV main.cpp)
+set(CORE_SOURCES
+    # src/core/engine.cpp
+    # src/core/helper.cpp
+)
+
+set(GUI_SOURCES
+    src/gui/mainWindow.cpp
+)
+
+qt6_wrap_cpp(MOC_SOURCES include/gui/mainWindow.h)
+
+add_executable(JanusLV src/main.cpp ${CORE_SOURCES} ${GUI_SOURCES} ${MOC_SOURCES})
+
 target_link_libraries(JanusLV PRIVATE Qt6::Widgets)
+target_include_directories(JanusLV PRIVATE include)

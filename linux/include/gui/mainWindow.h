@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-class QLabel;
+class QStackedWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -14,7 +14,7 @@ public:
     ~MainWindow();
 
 private:
-    QLabel *label;
+    QStackedWidget *stack;
 };
 
 #endif // MAINWINDOW_H

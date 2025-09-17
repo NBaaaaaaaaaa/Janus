@@ -4,7 +4,7 @@ project(JanusLV VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_AUTOMOC ON)
+# set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -20,9 +20,13 @@ set(CORE_SOURCES
 
 set(GUI_SOURCES
     src/gui/mainWindow.cpp
+    src/gui/leftPanel.cpp
 )
 
-qt6_wrap_cpp(MOC_SOURCES include/gui/mainWindow.h)
+qt6_wrap_cpp(MOC_SOURCES
+    include/gui/mainWindow.h
+    include/gui/leftPanel.h
+)
 
 add_executable(JanusLV src/main.cpp ${CORE_SOURCES} ${GUI_SOURCES} ${MOC_SOURCES})
 

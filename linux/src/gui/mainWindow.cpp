@@ -1,5 +1,8 @@
 #include "gui/mainWindow.h"
 #include "gui/leftPanel.h"
+#include "gui/stackPages/files.h"
+#include "gui/stackPages/processes.h"
+#include "gui/stackPages/info.h"
 
 #include <QLabel>
 #include <QStackedWidget>
@@ -14,22 +17,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     LeftPanel *left_panel = new LeftPanel(this);
 
-    QWidget *page1 = new QWidget(this);
-    QVBoxLayout *layout1 = new QVBoxLayout(page1);
-    layout1->addWidget(new QLabel("Files", this));
-
-    QWidget *page2 = new QWidget(this);
-    QVBoxLayout *layout2 = new QVBoxLayout(page2);
-    layout2->addWidget(new QLabel("Processes", this));
-
-    QWidget *page3 = new QWidget(this);
-    QVBoxLayout *layout3 = new QVBoxLayout(page3);
-    layout3->addWidget(new QLabel("Info", this));
-
     stack = new QStackedWidget(this);
-    stack->addWidget(page1);
-    stack->addWidget(page2);
-    stack->addWidget(page3);
+    stack->addWidget(new Files(this));
+    stack->addWidget(new Processes(this));
+    stack->addWidget(new Info(this));
 
     QHBoxLayout *main_layout = new QHBoxLayout(central_widget);
     main_layout->addWidget(left_panel);

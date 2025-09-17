@@ -19,9 +19,9 @@ signals:
 
 private:
     QVBoxLayout *layout;
-    QPushButton *files_btn;
-    QPushButton *processes_btn;
-    QPushButton *info_btn;
+    QPushButton *filesBtn;
+    QPushButton *processesBtn;
+    QPushButton *infoBtn;
 };
 
 

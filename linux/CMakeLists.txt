@@ -21,11 +21,17 @@ set(CORE_SOURCES
 set(GUI_SOURCES
     src/gui/mainWindow.cpp
     src/gui/leftPanel.cpp
+    src/gui/stackPages/files.cpp
+    src/gui/stackPages/processes.cpp
+    src/gui/stackPages/info.cpp
 )
 
 qt6_wrap_cpp(MOC_SOURCES
     include/gui/mainWindow.h
     include/gui/leftPanel.h
+    include/gui/stackPages/files.h
+    include/gui/stackPages/processes.h
+    include/gui/stackPages/info.h
 )
 
 add_executable(JanusLV src/main.cpp ${CORE_SOURCES} ${GUI_SOURCES} ${MOC_SOURCES})

@@ -1,4 +1,7 @@
 #include "gui/stackPages/files.h"
+#include "gui/stackPages/hexFilter.h"
+#include "core/inject.h"
+
 
 #include <QLineEdit>
 #include <QPushButton>
@@ -9,26 +12,86 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QLabel>
+#include <QGroupBox>
+#include <QRadioButton>
+#include <QTextEdit>
 
 Files::Files(QWidget *parent) : QWidget(parent)
 {
-    lineEdit = new QLineEdit(this);
+    pathEdit = new QLineEdit(this);
     browseBtn = new QPushButton("Выбрать...", this);
 
-    QWidget *findPanel = new QWidget(this);
-    QHBoxLayout *layout = new QHBoxLayout(findPanel);
-    layout->addWidget(lineEdit);
-    layout->addWidget(browseBtn);
+    // Создание виджета ввода файла
+    QWidget *findWidget = new QWidget(this);
+    QHBoxLayout *findLayout = new QHBoxLayout(findWidget);
+    findLayout->addWidget(pathEdit);
+    findLayout->addWidget(browseBtn);
 
+    // Создание виджета выбора метода перехода на полезную нагрузку
+    jumpMethodsGroup = new QGroupBox("Метод перехода на полезную нагрузку", this);
+    QVBoxLayout *jumpMethodsLayout = new QVBoxLayout(jumpMethodsGroup);
+
+    fmEEntryRadio = new QRadioButton("Изменение адреса точки входа", jumpMethodsGroup);
+    fmInitRadio = new QRadioButton("Изменение адреса функции в init", jumpMethodsGroup);
+    fmInitArrayRadio = new QRadioButton("Изменение адреса функции в init_array", jumpMethodsGroup);
+    fmFiniRadio = new QRadioButton("Изменение адреса функции в fini", jumpMethodsGroup);
+    fmFiniArrayRadio = new QRadioButton("Изменение адреса функции в fini_array", jumpMethodsGroup);
+    fmPltRadio = new QRadioButton("Модифицирует элемент первой импортированной функции в plt", jumpMethodsGroup);
+    fmEEntryRadio->setChecked(true);
+
+    jumpMethodsLayout->addWidget(fmEEntryRadio);
+    jumpMethodsLayout->addWidget(fmInitRadio);
+    jumpMethodsLayout->addWidget(fmInitArrayRadio);
+    jumpMethodsLayout->addWidget(fmFiniRadio);
+    jumpMethodsLayout->addWidget(fmFiniArrayRadio);
+    jumpMethodsLayout->addWidget(fmPltRadio);
+
+    // Создание виджета ввода полезной нагрузки
+    QWidget *payloadWidget = new QWidget(this);
+    QVBoxLayout *payloadLayout = new QVBoxLayout(payloadWidget);
+
+    QWidget *payloadHeadWidget = new QWidget(this);
+    QHBoxLayout *payloadHeadLayout = new QHBoxLayout(payloadHeadWidget);
+
+    loadPayloadBtn = new QPushButton("Загрузить из файла", this);
+
+    payloadHeadLayout->addWidget(new QLabel("Hex payload:", this));
+    payloadHeadLayout->addWidget(loadPayloadBtn);
+
+    payloadEdit = new QTextEdit(this);
+    payloadEdit->setPlaceholderText("Введите hex данные (например: 48 65 6C 6C 6F 20 57 6F 72 6C 64)\nИли: 48656C6C6F20576F726C64");
+    payloadEdit->setAcceptRichText(false);
+    payloadEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    payloadEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    payloadEdit->setLineWrapMode(QTextEdit::WidgetWidth);
+    payloadEdit->setWordWrapMode(QTextOption::WrapAnywhere); 
+    payloadEdit->setFont(QFont("Courier New", 10));
+    payloadEdit->setMinimumHeight(150);
+
+    HexFilter *filter = new HexFilter(this);
+    payloadEdit->installEventFilter(filter);
+
+    payloadLayout->addWidget(payloadHeadWidget);
+    payloadLayout->addWidget(payloadEdit);
+
+    // Кнопка выполнения инъекции
+    injectBtn = new QPushButton("Выполнить инъекцию", this);
+
+    // Добавление всего в основной layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(new QLabel("Files", this));
-    mainLayout->addWidget(findPanel);
+    mainLayout->addWidget(findWidget);
+    mainLayout->addWidget(jumpMethodsGroup);
+    mainLayout->addWidget(payloadWidget);
+    mainLayout->addWidget(injectBtn);
+
 
     mainLayout->addStretch();
 
+    connect(pathEdit, &QLineEdit::returnPressed, this, &Files::checkFileExists);
     connect(browseBtn, &QPushButton::clicked, this, &Files::browseFile);
-    connect(lineEdit, &QLineEdit::returnPressed, this, &Files::checkFileExists);
-    connect(this, &Files::fileChanged, this, &Files::handleFileChanged);
+    connect(loadPayloadBtn, &QPushButton::clicked, this, &Files::loadPayload);
+    connect(injectBtn, &QPushButton::clicked, this, &Files::injectPayload);
 }
 
 Files::~Files() { }
@@ -38,23 +101,58 @@ void Files::browseFile()
     QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
     if (!path.isEmpty())
     {
-        lineEdit->setText(path);
-        emit fileChanged(path);
+        pathEdit->setText(path);
     }
 }
 
 void Files::checkFileExists()
 {
-    QString path = lineEdit->text().trimmed();
+    QString path = pathEdit->text().trimmed();
     if (!path.isEmpty() && !QFile::exists(path))
     {
         QMessageBox::warning(this, "Ошибка", "Файл не найден!");
-        return;
     }
-    emit fileChanged(path);
 }
 
-void Files::handleFileChanged(const QString &path)
+void Files::loadPayload()
 {
-    qDebug() << "Файл выбран:" << path;
+    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
+    if (!path.isEmpty())
+    {
+        // отобразить в payloadEdit
+        payloadEdit->setText(path);
+    }
 }
+
+void Files::injectPayload()
+{
+    enum MethodsJumpsFile mjf;
+
+    if (pathEdit->text().trimmed().isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Файл для инъекции не выбран");
+        return;
+    }
+
+    if (payloadEdit->toPlainText().trimmed().isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки");
+        return;
+    }
+
+    if (fmEEntryRadio->isChecked()) {
+        mjf = FM_E_ENTRY;
+    } else if (fmInitRadio->isChecked()) {
+        mjf = FM_INIT;
+    } else if (fmInitArrayRadio->isChecked()) {
+        mjf = FM_INIT_ARRAY;
+    } else if (fmFiniRadio->isChecked()) {
+        mjf = FM_FINI;
+    } else if (fmFiniArrayRadio->isChecked()) {
+        mjf = FM_FINI_ARRAY;
+    } else if (fmPltRadio->isChecked()) {
+        mjf = FM_PLT;
+    }
+
+    // todo вынести копирование нагрузки в кучу в другой файл
+    qDebug() << "call injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod)";
+}
+

@@ -5,6 +5,10 @@
 
 class QLineEdit;
 class QPushButton;
+class QGroupBox;
+class QRadioButton;
+class QTextEdit;
+class QScrollArea;
 
 class Files : public QWidget
 {
@@ -14,17 +18,28 @@ public:
     explicit Files(QWidget *parent = nullptr);
     ~Files();
 
-signals:
-    void fileChanged(const QString &path);
-
 private slots:
     void browseFile();
     void checkFileExists();
-    void handleFileChanged(const QString &path);
+    void loadPayload();
+    void injectPayload();
 
 private:
-    QLineEdit *lineEdit;
+    QLineEdit *pathEdit;
     QPushButton *browseBtn;
+
+    QGroupBox *jumpMethodsGroup;
+    QRadioButton *fmEEntryRadio;
+    QRadioButton *fmInitRadio;
+    QRadioButton *fmInitArrayRadio;
+    QRadioButton *fmFiniRadio;
+    QRadioButton *fmFiniArrayRadio;
+    QRadioButton *fmPltRadio;
+
+    QTextEdit *payloadEdit;
+
+    QPushButton *loadPayloadBtn;
+    QPushButton *injectBtn;
 };
 
 #endif // FILES_H

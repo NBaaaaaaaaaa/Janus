@@ -1,0 +1,6 @@
+#ifndef INJECT_METHODS_H
+#define INJECT_METHODS_H
+
+
+
+#endif // INJECT_METHODS_H

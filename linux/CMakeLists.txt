@@ -14,8 +14,8 @@ set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake/Qt6")
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 set(CORE_SOURCES
-    # src/core/engine.cpp
-    # src/core/helper.cpp
+    src/core/inject.cpp
+    src/core/injectMethods.cpp
 )
 
 set(GUI_SOURCES
@@ -24,6 +24,7 @@ set(GUI_SOURCES
     src/gui/stackPages/files.cpp
     src/gui/stackPages/processes.cpp
     src/gui/stackPages/info.cpp
+    src/gui/stackPages/hexFilter.cpp
 )
 
 qt6_wrap_cpp(MOC_SOURCES
@@ -32,6 +33,9 @@ qt6_wrap_cpp(MOC_SOURCES
     include/gui/stackPages/files.h
     include/gui/stackPages/processes.h
     include/gui/stackPages/info.h
+    include/gui/stackPages/hexFilter.h
+    include/core/inject.h
+    include/core/injectMethods.h
 )
 
 add_executable(JanusLV src/main.cpp ${CORE_SOURCES} ${GUI_SOURCES} ${MOC_SOURCES})

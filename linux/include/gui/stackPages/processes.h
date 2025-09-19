@@ -5,6 +5,10 @@
 
 class QLineEdit;
 class QPushButton;
+class QGroupBox;
+class QRadioButton;
+class QTextEdit;
+class QScrollArea;
 
 class Processes : public QWidget
 {
@@ -13,17 +17,27 @@ public:
     explicit Processes(QWidget *parent = nullptr);
     ~Processes();
 
-signals:
-    void processChanged(int pid);
-
 private slots:
     void browseProcess();
     void checkPid();
-    void handleProcessChanged(int pid);
+    void loadPayload();
+    void injectPayload();
 
 private:
-    QLineEdit *lineEdit;
+    QLineEdit *pathEdit;
     QPushButton *browseBtn;
+
+    QGroupBox *jumpMethodsGroup;
+    QRadioButton *pmIpRadio;
+    QRadioButton *pmCurInstRadio;
+    QRadioButton *pmGotRadio;
+    QRadioButton *pmFiniRadio;
+    QRadioButton *pmFiniArrayRadio;
+
+    QTextEdit *payloadEdit;
+
+    QPushButton *loadPayloadBtn;
+    QPushButton *injectBtn;
 };
 
 

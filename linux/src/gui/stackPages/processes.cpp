@@ -1,4 +1,6 @@
 #include "gui/stackPages/processes.h"
+#include "gui/stackPages/hexFilter.h"
+#include "core/inject.h"
 
 #include <QDir>
 #include <QStringList>
@@ -14,27 +16,85 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QLabel>
+#include <QFileDialog>
+#include <QGroupBox>
+#include <QRadioButton>
+#include <QTextEdit>
 
 Processes::Processes(QWidget *parent) : QWidget(parent)
 {   
-    lineEdit = new QLineEdit(this);
+    pathEdit = new QLineEdit(this);
     browseBtn = new QPushButton("Выбрать...", this);
 
-    QWidget *findPanel = new QWidget(this);
-    QHBoxLayout *layout = new QHBoxLayout(findPanel);
-    layout->addWidget(lineEdit);
-    layout->addWidget(browseBtn);
+    // Создание виджета ввода файла
+    QWidget *findWidget = new QWidget(this);
+    QHBoxLayout *findLayout = new QHBoxLayout(findWidget);
+    findLayout->addWidget(pathEdit);
+    findLayout->addWidget(browseBtn);
 
+    // Создание виджета выбора метода перехода на полезную нагрузку
+    jumpMethodsGroup = new QGroupBox("Метод перехода на полезную нагрузку", this);
+    QVBoxLayout *jumpMethodsLayout = new QVBoxLayout(jumpMethodsGroup);
+
+    pmIpRadio = new QRadioButton("Изменение значение регистра адреса текущей инструкции", jumpMethodsGroup);
+    pmCurInstRadio = new QRadioButton("Изменение текущей инструкции", jumpMethodsGroup);
+    pmGotRadio = new QRadioButton("Изменение адреса ипортируемой функции", jumpMethodsGroup);
+    pmFiniRadio = new QRadioButton("Изменение адреса функции в fini", jumpMethodsGroup);
+    pmFiniArrayRadio = new QRadioButton("Изменение адреса функции в fini_array", jumpMethodsGroup);
+    pmIpRadio->setChecked(true);
+
+    jumpMethodsLayout->addWidget(pmIpRadio);
+    jumpMethodsLayout->addWidget(pmCurInstRadio);
+    jumpMethodsLayout->addWidget(pmGotRadio);
+    jumpMethodsLayout->addWidget(pmFiniRadio);
+    jumpMethodsLayout->addWidget(pmFiniArrayRadio);
+
+    // Создание виджета ввода полезной нагрузки
+    QWidget *payloadWidget = new QWidget(this);
+    QVBoxLayout *payloadLayout = new QVBoxLayout(payloadWidget);
+
+    QWidget *payloadHeadWidget = new QWidget(this);
+    QHBoxLayout *payloadHeadLayout = new QHBoxLayout(payloadHeadWidget);
+
+    loadPayloadBtn = new QPushButton("Загрузить из файла", this);
+
+    payloadHeadLayout->addWidget(new QLabel("Hex payload:", this));
+    payloadHeadLayout->addWidget(loadPayloadBtn);
+
+    payloadEdit = new QTextEdit(this);
+    payloadEdit->setPlaceholderText("Введите hex данные (например: 48 65 6C 6C 6F 20 57 6F 72 6C 64)\nИли: 48656C6C6F20576F726C64");
+    payloadEdit->setAcceptRichText(false);
+    payloadEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    payloadEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    payloadEdit->setLineWrapMode(QTextEdit::WidgetWidth);
+    payloadEdit->setWordWrapMode(QTextOption::WrapAnywhere); 
+    payloadEdit->setFont(QFont("Courier New", 10));
+    payloadEdit->setMinimumHeight(150);
+
+    HexFilter *filter = new HexFilter(this);
+    payloadEdit->installEventFilter(filter);
+
+    payloadLayout->addWidget(payloadHeadWidget);
+    payloadLayout->addWidget(payloadEdit);
+
+    // Кнопка выполнения инъекции
+    injectBtn = new QPushButton("Выполнить инъекцию", this);
+
+    // Добавление всего в основной layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(new QLabel("Processes", this));
-    mainLayout->addWidget(findPanel);
-    
+    mainLayout->addWidget(findWidget);
+    mainLayout->addWidget(jumpMethodsGroup);
+    mainLayout->addWidget(payloadWidget);
+    mainLayout->addWidget(injectBtn);
+
+
     mainLayout->addStretch();
 
     connect(browseBtn, &QPushButton::clicked, this, &Processes::browseProcess);
-    connect(lineEdit, &QLineEdit::returnPressed, this, &Processes::checkPid);
-    connect(this, &Processes::processChanged, this, &Processes::handleProcessChanged);
-
+    connect(pathEdit, &QLineEdit::returnPressed, this, &Processes::checkPid);
+    connect(loadPayloadBtn, &QPushButton::clicked, this, &Processes::loadPayload);
+    connect(injectBtn, &QPushButton::clicked, this, &Processes::injectPayload);
 }
 
 Processes::~Processes() { }
@@ -42,12 +102,11 @@ Processes::~Processes() { }
 void Processes::checkPid()
 {
     bool ok;
-    int id = lineEdit->text().trimmed().toInt(&ok);
+    int id = pathEdit->text().trimmed().toInt(&ok);
     if (!ok || !QDir(QString("/proc/%1").arg(id)).exists()) {
         QMessageBox::warning(this, "Ошибка", "Процесс с таким PID не найден!");
         return;
     }
-    emit processChanged(id);
 }
 
 void Processes::browseProcess()
@@ -90,13 +149,47 @@ void Processes::browseProcess()
         QString selected = listWidget->currentItem() ? listWidget->currentItem()->text() : "";
         if (!selected.isEmpty()) {
             int selectedPid = selected.section(':', 0, 0).toInt();
-            lineEdit->setText(QString::number(selectedPid));
-            emit processChanged(selectedPid);
+            pathEdit->setText(QString::number(selectedPid));
         }
     }
 }
 
-void Processes::handleProcessChanged(int pid)
+void Processes::loadPayload()
 {
-    qDebug() << "Процесс выбран:" << pid;
+    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
+    if (!path.isEmpty())
+    {
+        // отобразить в payloadEdit
+        payloadEdit->setText(path);
+    }
+}
+
+void Processes::injectPayload()
+{
+    enum MethodsJumpsProc mjp;
+
+    if (pathEdit->text().trimmed().isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Процесс для инъекции не выбран");
+        return;
+    }
+
+    if (payloadEdit->toPlainText().trimmed().isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки");
+        return;
+    }
+
+    if (pmIpRadio->isChecked()) {
+        mjp = PM_IP;
+    } else if (pmCurInstRadio->isChecked()) {
+        mjp = PM_CUR_INST;
+    } else if (pmGotRadio->isChecked()) {
+        mjp = PM_GOT;
+    } else if (pmFiniRadio->isChecked()) {
+        mjp = PM_FINI;
+    } else if (pmFiniArrayRadio->isChecked()) {
+        mjp = PM_FINI_ARRAY;
+    }
+
+    // todo вынести копирование нагрузки в кучу в другой файл
+    qDebug() << "call injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod)";
 }

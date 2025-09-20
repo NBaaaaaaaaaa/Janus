@@ -92,22 +92,11 @@ Processes::Processes(QWidget *parent) : QWidget(parent)
     mainLayout->addStretch();
 
     connect(browseBtn, &QPushButton::clicked, this, &Processes::browseProcess);
-    connect(pathEdit, &QLineEdit::returnPressed, this, &Processes::checkPid);
     connect(loadPayloadBtn, &QPushButton::clicked, this, &Processes::loadPayload);
     connect(injectBtn, &QPushButton::clicked, this, &Processes::injectPayload);
 }
 
 Processes::~Processes() { }
-
-void Processes::checkPid()
-{
-    bool ok;
-    int id = pathEdit->text().trimmed().toInt(&ok);
-    if (!ok || !QDir(QString("/proc/%1").arg(id)).exists()) {
-        QMessageBox::warning(this, "Ошибка", "Процесс с таким PID не найден!");
-        return;
-    }
-}
 
 void Processes::browseProcess()
 {
@@ -167,14 +156,22 @@ void Processes::loadPayload()
 void Processes::injectPayload()
 {
     enum MethodsJumpsProc mjp;
+    struct Payload payload;
+    QByteArray pathData;
+    QByteArray payloadData;
+    QString path = pathEdit->text().trimmed();
+    QString pld = payloadEdit->toPlainText().trimmed();
 
-    if (pathEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Процесс для инъекции не выбран");
+    bool ok;
+    int id = path.toInt(&ok);
+
+    if (!ok || !QDir(QString("/proc/%1").arg(id)).exists()) {
+        QMessageBox::warning(this, "Ошибка", "Процесс с таким PID не найден!");
         return;
     }
 
-    if (payloadEdit->toPlainText().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки");
+    if (pld.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки!");
         return;
     }
 
@@ -190,6 +187,19 @@ void Processes::injectPayload()
         mjp = PM_FINI_ARRAY;
     }
 
-    // todo вынести копирование нагрузки в кучу в другой файл
-    qDebug() << "call injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod)";
+    payloadData = pld.toUtf8();
+    payload.size = payloadData.size();
+    payload.addr = malloc(payload.size);
+
+    if (!payload.addr) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось выделить память");
+        return;
+    }
+
+    memcpy(payload.addr, payloadData.constData(), payload.size);
+
+    pathData = path.toUtf8();
+    injectPayloadManager(TT_PROC, pathData.data(), &payload, mjp);
+
+    free(payload.addr);
 }

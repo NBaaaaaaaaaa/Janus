@@ -1,6 +1,8 @@
 #include "core/inject.h"
 #include "core/injectMethods.h"
 
+#include <QDebug>
+
 static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload, int jmpMethod);
 static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload, int jmpMethod);
 
@@ -22,6 +24,7 @@ int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payloa
 static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
 
+    qDebug() << "injectPayloadFile";
     // тут функция парсинга структуры файла 
 
     switch (jmpMethod)
@@ -61,6 +64,7 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
 static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
 
+    qDebug() << "injectPayloadProc";
     // тут функция парсинга структуры файла 
 
     switch (jmpMethod)

@@ -88,7 +88,6 @@ Files::Files(QWidget *parent) : QWidget(parent)
 
     mainLayout->addStretch();
 
-    connect(pathEdit, &QLineEdit::returnPressed, this, &Files::checkFileExists);
     connect(browseBtn, &QPushButton::clicked, this, &Files::browseFile);
     connect(loadPayloadBtn, &QPushButton::clicked, this, &Files::loadPayload);
     connect(injectBtn, &QPushButton::clicked, this, &Files::injectPayload);
@@ -105,15 +104,6 @@ void Files::browseFile()
     }
 }
 
-void Files::checkFileExists()
-{
-    QString path = pathEdit->text().trimmed();
-    if (!path.isEmpty() && !QFile::exists(path))
-    {
-        QMessageBox::warning(this, "Ошибка", "Файл не найден!");
-    }
-}
-
 void Files::loadPayload()
 {
     QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
@@ -127,14 +117,20 @@ void Files::loadPayload()
 void Files::injectPayload()
 {
     enum MethodsJumpsFile mjf;
+    struct Payload payload;
+    QByteArray pathData;
+    QByteArray payloadData;
+    QString path = pathEdit->text().trimmed();
+    QString pld = payloadEdit->toPlainText().trimmed();
 
-    if (pathEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Файл для инъекции не выбран");
+    if (path.isEmpty() || (!path.isEmpty() && !QFile::exists(path)))
+    {
+        QMessageBox::warning(this, "Ошибка", "Файл не найден!");
         return;
     }
 
-    if (payloadEdit->toPlainText().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки");
+    if (pld.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Нет полезной нагрузки!");
         return;
     }
 
@@ -152,7 +148,20 @@ void Files::injectPayload()
         mjf = FM_PLT;
     }
 
-    // todo вынести копирование нагрузки в кучу в другой файл
-    qDebug() << "call injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod)";
+    payloadData = pld.toUtf8();
+    payload.size = payloadData.size();
+    payload.addr = malloc(payload.size);
+
+    if (!payload.addr) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось выделить память");
+        return;
+    }
+
+    memcpy(payload.addr, payloadData.constData(), payload.size);
+
+    pathData = path.toUtf8();
+    injectPayloadManager(TT_FILE, pathData.data(), &payload, mjf);
+
+    free(payload.addr);
 }
 

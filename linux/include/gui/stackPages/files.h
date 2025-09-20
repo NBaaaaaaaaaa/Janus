@@ -20,7 +20,6 @@ public:
 
 private slots:
     void browseFile();
-    void checkFileExists();
     void loadPayload();
     void injectPayload();
 

@@ -37,9 +37,9 @@ enum InjectStatus {
 
 struct Payload {
     int size;
-    char *addr;
+    void *addr;
 };
 
-int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, char jmpMethod);
+int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod);
 
 #endif // INJECT_H

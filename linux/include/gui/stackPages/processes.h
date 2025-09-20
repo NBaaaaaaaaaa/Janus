@@ -19,7 +19,6 @@ public:
 
 private slots:
     void browseProcess();
-    void checkPid();
     void loadPayload();
     void injectPayload();
 

@@ -145,12 +145,24 @@ void Processes::browseProcess()
 
 void Processes::loadPayload()
 {
-    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
-    if (!path.isEmpty())
+    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*)");
+    if (path.isEmpty())
     {
-        // отобразить в payloadEdit
-        payloadEdit->setText(path);
+        return;
     }
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл: " + file.errorString());
+        return;
+    }
+
+    QByteArray fileData = file.readAll();
+    file.close();
+
+    QString hexContent = fileData.toHex(' ').toUpper();
+    
+    payloadEdit->setPlainText(hexContent);
 }
 
 void Processes::injectPayload()
@@ -161,6 +173,7 @@ void Processes::injectPayload()
     QByteArray payloadData;
     QString path = pathEdit->text().trimmed();
     QString pld = payloadEdit->toPlainText().trimmed();
+    enum InjectStatus injectStatus;
 
     bool ok;
     int id = path.toInt(&ok);
@@ -187,7 +200,7 @@ void Processes::injectPayload()
         mjp = PM_FINI_ARRAY;
     }
 
-    payloadData = pld.toUtf8();
+    payloadData = QByteArray::fromHex(pld.toUtf8());
     payload.size = payloadData.size();
     payload.addr = malloc(payload.size);
 
@@ -198,8 +211,11 @@ void Processes::injectPayload()
 
     memcpy(payload.addr, payloadData.constData(), payload.size);
 
-    pathData = path.toUtf8();
+    pathData = QString("/proc/%1/mem").arg(id).toUtf8();
     injectPayloadManager(TT_PROC, pathData.data(), &payload, mjp);
+
+    // надо делать связь строк с кодом 
+    qDebug() << "stat = " << injectStatus;
 
     free(payload.addr);
 }

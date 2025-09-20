@@ -97,7 +97,7 @@ Files::~Files() { }
 
 void Files::browseFile()
 {
-    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
+    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*)");
     if (!path.isEmpty())
     {
         pathEdit->setText(path);
@@ -106,12 +106,24 @@ void Files::browseFile()
 
 void Files::loadPayload()
 {
-    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
-    if (!path.isEmpty())
+    QString path = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*)");
+    if (path.isEmpty())
     {
-        // отобразить в payloadEdit
-        payloadEdit->setText(path);
+        return;
     }
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл: " + file.errorString());
+        return;
+    }
+
+    QByteArray fileData = file.readAll();
+    file.close();
+
+    QString hexContent = fileData.toHex(' ').toUpper();
+    
+    payloadEdit->setPlainText(hexContent);
 }
 
 void Files::injectPayload()
@@ -122,6 +134,8 @@ void Files::injectPayload()
     QByteArray payloadData;
     QString path = pathEdit->text().trimmed();
     QString pld = payloadEdit->toPlainText().trimmed();
+    enum InjectStatus injectStatus;
+
 
     if (path.isEmpty() || (!path.isEmpty() && !QFile::exists(path)))
     {
@@ -148,7 +162,7 @@ void Files::injectPayload()
         mjf = FM_PLT;
     }
 
-    payloadData = pld.toUtf8();
+    payloadData = QByteArray::fromHex(pld.toUtf8());
     payload.size = payloadData.size();
     payload.addr = malloc(payload.size);
 
@@ -160,7 +174,10 @@ void Files::injectPayload()
     memcpy(payload.addr, payloadData.constData(), payload.size);
 
     pathData = path.toUtf8();
-    injectPayloadManager(TT_FILE, pathData.data(), &payload, mjf);
+    injectStatus = injectPayloadManager(TT_FILE, pathData.data(), &payload, mjf);
+
+    // надо делать связь строк с кодом 
+    qDebug() << "stat = " << injectStatus;
 
     free(payload.addr);
 }

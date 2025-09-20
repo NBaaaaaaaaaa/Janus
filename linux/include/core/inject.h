@@ -31,6 +31,7 @@ enum InjectStatus {
     IJS_NO_SPACE,
     IJS_TARGET_NOT_FOUND,
     IJS_ACCESS_DENIED,
+    IJS_TARGET_NOT_ELF,
     IJS_UNKNOWN_TARGET_TYPE,
     IJS_UNKNOWN_JUMP_METHOD
 };
@@ -40,6 +41,6 @@ struct Payload {
     void *addr;
 };
 
-int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod);
+enum InjectStatus injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod);
 
 #endif // INJECT_H

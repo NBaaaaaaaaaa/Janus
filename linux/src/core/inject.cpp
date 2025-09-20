@@ -7,7 +7,7 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
 static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload, int jmpMethod);
 
 
-int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod) {
+enum InjectStatus injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
 
     if (typeTarget == TT_FILE) {
@@ -24,8 +24,10 @@ int injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payloa
 static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
 
-    qDebug() << "injectPayloadFile";
-    // тут функция парсинга структуры файла 
+    // todo вызывать парсер файла
+    if (!isElf(target)) {
+        return IJS_TARGET_NOT_ELF;
+    }
 
     switch (jmpMethod)
     {
@@ -64,8 +66,10 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
 static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
 
-    qDebug() << "injectPayloadProc";
-    // тут функция парсинга структуры файла 
+    // todo вызывать парсер файла
+    if (!isElf(target)) {
+        return IJS_TARGET_NOT_ELF;
+    }
 
     switch (jmpMethod)
     {

@@ -1,6 +1,9 @@
 #include "core/inject.h"
 #include "core/injectMethods.h"
 
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <QDebug>
 
 static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload, int jmpMethod);
@@ -12,8 +15,10 @@ enum InjectStatus injectPayloadManager(enum TypeTarget typeTarget, char *target,
 
     if (typeTarget == TT_FILE) {
         ijsStatus = injectPayloadFile(target, payload, jmpMethod);
+
     } else if (typeTarget == TT_PROC) {
         ijsStatus = injectPayloadProc(target, payload, jmpMethod);
+
     } else {
         return IJS_UNKNOWN_TARGET_TYPE;
     }
@@ -23,10 +28,28 @@ enum InjectStatus injectPayloadManager(enum TypeTarget typeTarget, char *target,
 
 static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
+    struct TargetInfo ti;
 
-    // todo вызывать парсер файла
-    if (!isElf(target)) {
-        return IJS_TARGET_NOT_ELF;
+    int fd = open(target, O_RDWR);
+
+    if (fd == -1) {
+        switch (errno) {
+        case ENOENT:
+            return IJS_TARGET_NOT_FOUND;
+        case EACCES:
+        case EPERM:
+            return IJS_ACCESS_DENIED;
+        default:
+            return IJS_OPEN_ERROR;
+        }
+    }
+
+    if (saveFileTargetInfo(fd, &ti)) {
+        return IJS_PARSE_ERROR;
+    }
+
+    if (injectPayload(fd, &ti, payload)) {
+        return IJS_INJECT_ERROR;
     }
 
     switch (jmpMethod)
@@ -60,16 +83,44 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
         break;
     }
 
+    close(fd);
     return ijsStatus;
 }
 
 static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload, int jmpMethod) {
     enum InjectStatus ijsStatus;
+    struct TargetInfo ti;
 
-    // todo вызывать парсер файла
-    if (!isElf(target)) {
-        return IJS_TARGET_NOT_ELF;
+    char buffer[100];
+    char mem[] = "mem";
+
+    snprintf(buffer, sizeof(buffer), "%s/%s", target, mem);
+    
+    int fd = open(buffer, O_RDWR);
+
+    if (fd == -1) {
+        switch (errno) {
+        case ENOENT:
+            return IJS_TARGET_NOT_FOUND;
+        case EACCES:
+        case EPERM:
+            return IJS_ACCESS_DENIED;
+        default:
+            return IJS_OPEN_ERROR;
+        }
     }
+
+    qDebug() << "1";
+
+    if (saveProcTargetInfo(fd, &ti, target)) {
+        return IJS_PARSE_ERROR;
+    }
+
+    qDebug() << "2";
+    if (injectPayload(fd, &ti, payload)) {
+        return IJS_INJECT_ERROR;
+    }
+    qDebug() << "3";
 
     switch (jmpMethod)
     {
@@ -98,6 +149,7 @@ static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload
         break;
     }
 
+    close(fd);
     return ijsStatus;
 }
 

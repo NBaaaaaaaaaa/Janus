@@ -211,7 +211,7 @@ void Processes::injectPayload()
 
     memcpy(payload.addr, payloadData.constData(), payload.size);
 
-    pathData = QString("/proc/%1/mem").arg(id).toUtf8();
+    pathData = QString("/proc/%1").arg(id).toUtf8();
     injectPayloadManager(TT_PROC, pathData.data(), &payload, mjp);
 
     // надо делать связь строк с кодом 

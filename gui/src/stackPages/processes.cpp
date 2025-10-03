@@ -1,6 +1,6 @@
-#include "gui/stackPages/processes.h"
-#include "gui/stackPages/hexFilter.h"
-#include "core/inject.h"
+#include "stackPages/processes.h"
+#include "stackPages/hexFilter.h"
+#include "core_api.h"
 
 #include <QDir>
 #include <QStringList>

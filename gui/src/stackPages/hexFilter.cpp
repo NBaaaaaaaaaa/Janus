@@ -1,4 +1,4 @@
-#include "gui/stackPages/hexFilter.h"
+#include "stackPages/hexFilter.h"
 
 #include <QEvent>
 #include <QKeyEvent>

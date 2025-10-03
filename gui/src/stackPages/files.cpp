@@ -1,6 +1,6 @@
-#include "gui/stackPages/files.h"
-#include "gui/stackPages/hexFilter.h"
-#include "core/inject.h"
+#include "stackPages/files.h"
+#include "stackPages/hexFilter.h"
+#include "core_api.h"
 
 
 #include <QLineEdit>

@@ -1,4 +1,4 @@
-#include "gui/stackPages/info.h"
+#include "stackPages/info.h"
 
 #include <QVBoxLayout>
 #include <QLabel>

@@ -1,8 +1,8 @@
-#include "gui/mainWindow.h"
-#include "gui/leftPanel.h"
-#include "gui/stackPages/files.h"
-#include "gui/stackPages/processes.h"
-#include "gui/stackPages/info.h"
+#include "mainWindow.h"
+#include "leftPanel.h"
+#include "stackPages/files.h"
+#include "stackPages/processes.h"
+#include "stackPages/info.h"
 
 #include <QLabel>
 #include <QStackedWidget>

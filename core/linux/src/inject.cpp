@@ -1,5 +1,5 @@
-#include "core/inject.h"
-#include "core/injectMethods.h"
+#include "core_api.h"
+#include "injectMethods.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -44,7 +44,7 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
         }
     }
 
-    if (saveFileTargetInfo(fd, &ti)) {
+    if (saveTargetInfo(fd, &ti, NULL)) {
         return IJS_PARSE_ERROR;
     }
 
@@ -55,7 +55,7 @@ static enum InjectStatus injectPayloadFile(char *target, struct Payload *payload
     switch (jmpMethod)
     {
     case FM_E_ENTRY:
-        /* code */
+        fm_e_entry(fd, &ti, payload);
         break;
 
     case FM_INIT:
@@ -110,18 +110,14 @@ static enum InjectStatus injectPayloadProc(char *target, struct Payload *payload
         }
     }
 
-    qDebug() << "1";
-
-    if (saveProcTargetInfo(fd, &ti, target)) {
+    if (saveTargetInfo(fd, &ti, target)) {
         return IJS_PARSE_ERROR;
     }
 
-    qDebug() << "2";
     if (injectPayload(fd, &ti, payload)) {
         return IJS_INJECT_ERROR;
     }
-    qDebug() << "3";
-
+    
     switch (jmpMethod)
     {
     case PM_IP:

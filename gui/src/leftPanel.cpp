@@ -1,4 +1,4 @@
-#include "gui/leftPanel.h"
+#include "leftPanel.h"
 #include <QPushButton>
 #include <QVBoxLayout>
 

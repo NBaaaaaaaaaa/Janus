@@ -1,5 +1,5 @@
-#ifndef INJECT_H
-#define INJECT_H
+#ifndef CORE_API_H
+#define CORE_API_H
 
 // Методы перехода на полезную нагрузку для файла
 enum MethodsJumpsFile {
@@ -45,4 +45,4 @@ struct Payload {
 
 enum InjectStatus injectPayloadManager(enum TypeTarget typeTarget, char *target, struct Payload *payload, int jmpMethod);
 
-#endif // INJECT_H
+#endif // CORE_API_H

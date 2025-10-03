@@ -38,7 +38,6 @@ elseif (UNIX)
     set(CORE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core/linux/include)
 endif()
 
-
 # --- CLI версия ---
 if (BUILD_CLI)
     add_executable(JanusCLI
